@@ -8,6 +8,7 @@ import (
 	"io"
 	"os"
 	"uncomment-cli/internal/utils"
+	"uncomment-cli/pkg/path"
 )
 
 func Uncomment(originalPath string) error {
@@ -47,7 +48,12 @@ func Uncomment(originalPath string) error {
 		return fmt.Errorf("failed to clear original file: %w", err)
 	}
 
-	dst, err := os.Open(originalPath)
+	safePath, err := path.AllowedPath(originalPath)
+	if err != nil {
+		return err
+	}
+
+	dst, err := os.Open(safePath) // #nosec G304
 	if err != nil {
 		return fmt.Errorf("failed to open original: %w", err)
 	}
