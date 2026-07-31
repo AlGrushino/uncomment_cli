@@ -26,6 +26,9 @@ test.html: test.coverage ## Generate HTML coverage report
 	go tool cover -html=coverage.out -o coverage.html
 	@echo "Отчёт: coverage.html"
 
+test.show: test.html ## Show HTML coverage report in browser
+	go tool cover -html=coverage.out
+
 fmt: ## Format code with go fmt
 	go fmt ./...
 
