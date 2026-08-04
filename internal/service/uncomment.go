@@ -1,6 +1,7 @@
 package service
 
 import (
+	"bytes"
 	"fmt"
 	"go/ast"
 	"go/format"
@@ -8,7 +9,6 @@ import (
 	"go/token"
 	"io"
 	"os"
-	"uncomment-cli/internal/utils"
 	"uncomment-cli/pkg/path"
 )
 
@@ -44,29 +44,11 @@ func Uncomment(originalPath string) error {
 		return true
 	})
 
-	newPath, err := utils.GetFilePath(originalPath)
-	if err != nil {
-		return fmt.Errorf("failed to get file path: %w", err)
-	}
+	var buf bytes.Buffer
 
-	outputFile, err := os.CreateTemp(newPath, "temp_file_*.go")
-	if err != nil {
-		return fmt.Errorf("failed to create temp file: %w", err)
-	}
-	defer os.Remove(outputFile.Name())
-
-	err = format.Node(outputFile, fset, file)
+	err = format.Node(&buf, fset, file)
 	if err != nil {
 		return fmt.Errorf("failed to format and write code into temp file: %w", err)
-	}
-
-	if _, err := outputFile.Seek(0, 0); err != nil {
-		return fmt.Errorf("failed to seek temp file: %w", err)
-	}
-
-	err = os.Truncate(originalPath, 0)
-	if err != nil {
-		return fmt.Errorf("failed to clear original file: %w", err)
 	}
 
 	safePath, err := path.AllowedPath(originalPath)
@@ -80,7 +62,7 @@ func Uncomment(originalPath string) error {
 	}
 	defer dst.Close()
 
-	_, err = io.Copy(dst, outputFile)
+	_, err = io.Copy(dst, &buf)
 	if err != nil {
 		return fmt.Errorf("failed to copy src to dst: %w", err)
 	}
