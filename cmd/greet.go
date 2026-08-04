@@ -1,8 +1,6 @@
 package cmd
 
 import (
-	"fmt"
-
 	"github.com/spf13/cobra"
 )
 
@@ -12,7 +10,7 @@ var greetCmd = &cobra.Command{
 	Use:   "greet",
 	Short: "Prints a friendly greeting",
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Printf("Hello, %s!\n", userLabel)
+		cmd.Printf("Hello, %s!\n", userLabel)
 	},
 }
 
