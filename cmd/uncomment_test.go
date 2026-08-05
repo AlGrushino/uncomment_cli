@@ -32,14 +32,28 @@ func TestUncommentCmd(t *testing.T) {
 		}
 	}(tempPath)
 
-	firstTestFile, err := os.CreateTemp(tempDir, "temp_file_*.go")
+	firstTestFile, err := os.CreateTemp(tempPath, "temp_file_*.go")
 	if err != nil {
 		t.Fatalf("failed to create temp file: %v", err)
 	}
-	secondTestFile, err := os.CreateTemp(tempDir, "temp_file_*.go")
+	secondTestFile, err := os.CreateTemp(tempPath, "temp_file_*.go")
 	if err != nil {
 		t.Fatalf("failed to create temp file: %v", err)
 	}
+
+	defer func(f *os.File) {
+		if err = f.Close(); err != nil {
+			t.Fatalf("failed to close test file: %v", err)
+		}
+
+	}(firstTestFile)
+
+	defer func(f *os.File) {
+		if err = f.Close(); err != nil {
+			t.Fatalf("failed to close test file: %v", err)
+		}
+
+	}(secondTestFile)
 
 	firstPath, err := filepath.Abs(firstTestFile.Name())
 	if err != nil {
@@ -49,6 +63,18 @@ func TestUncommentCmd(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to get temp file path: %v", err)
 	}
+
+	defer func(path string) {
+		if err = os.RemoveAll(path); err != nil {
+			t.Fatalf("failed to remove test file: %v", err)
+		}
+	}(firstPath)
+
+	defer func(path string) {
+		if err = os.RemoveAll(path); err != nil {
+			t.Fatalf("failed to remove test file: %v", err)
+		}
+	}(secondPath)
 
 	const mockText = `package main
 

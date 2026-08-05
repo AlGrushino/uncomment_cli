@@ -8,19 +8,50 @@ import (
 )
 
 func TestUncomment(t *testing.T) {
-	testFileName := "test_file.go"
-
-	file, err := os.Create(testFileName)
+	dir, err := os.Getwd()
 	if err != nil {
-		t.Fatalf("failed to create temp file for tests: %v", err)
+		t.Fatalf("failed to get curr dir for tests: %v", err)
 	}
-	defer file.Close()
-	defer func(name string) {
-		err = os.Remove(name)
+
+	const tempDirPattern = "test_dir_*"
+	tempDir, err := os.MkdirTemp(dir, tempDirPattern)
+	if err != nil {
+		t.Fatalf("failed to create temp dir for tests: %v", err)
+	}
+
+	tempDirPath, err := filepath.Abs(tempDir)
+	if err != nil {
+		t.Fatalf("failed te get abs path of temp dir: %v", err)
+	}
+
+	defer func(path string) {
+		err = os.RemoveAll(path)
 		if err != nil {
-			t.Fatalf("failed to remove test_file.go: %v", err)
+			t.Fatalf("failed to remove temp dir: %v", err)
 		}
-	}(testFileName)
+	}(tempDirPath)
+
+	const testFilePattern = "test_file_*.go"
+
+	file, err := os.CreateTemp(tempDirPath, testFilePattern)
+
+	tempFilePath, err := filepath.Abs(file.Name())
+	if err != nil {
+		t.Fatalf("failed to get temp file path: %v", err)
+	}
+
+	defer func(f *os.File) {
+		if err = file.Close(); err != nil {
+			t.Fatalf("failed to close temp file: %v", err)
+		}
+	}(file)
+
+	defer func(path string) {
+		err = os.RemoveAll(tempFilePath)
+		if err != nil {
+			t.Fatalf("failed to remove test file: %v", err)
+		}
+	}(tempDirPath)
 
 	srcContent := `package main
 
@@ -33,12 +64,11 @@ func main() {
 }
 `
 
-	dir, err := os.Getwd()
+	srcPath, err := filepath.Abs(file.Name())
 	if err != nil {
-		t.Fatalf("failed to get curr dir for tests: %v", err)
+		t.Fatalf("failed to get abs path of test file: %v", err)
 	}
 
-	srcPath := filepath.Join(dir, testFileName)
 	if err := os.WriteFile(srcPath, []byte(srcContent), 0o600); err != nil {
 		t.Fatalf("failed to write source file: %v", err)
 	}
@@ -52,20 +82,18 @@ func main() {
 		t.Fatalf("failed to read result file: %v", err)
 	}
 
-	gotStr := string(got)
-
-	if strings.Contains(gotStr, "// This is a comment") {
-		t.Errorf("result still contains comment: %q", gotStr)
+	if strings.Contains(string(got), "// This is a comment") {
+		t.Errorf("result still contains comment: %q", got)
 	}
-	if strings.Contains(gotStr, "// Another comment") {
-		t.Errorf("result still contains comment: %q", gotStr)
+	if strings.Contains(string(got), "// Another comment") {
+		t.Errorf("result still contains comment: %q", got)
 	}
 
-	if !strings.Contains(gotStr, `fmt.Println("Hello")`) {
-		t.Errorf("result lost code: %q", gotStr)
+	if !strings.Contains(string(got), `fmt.Println("Hello")`) {
+		t.Errorf("result lost code: %q", got)
 	}
-	if !strings.Contains(gotStr, "func main()") {
-		t.Errorf("result lost code: %q", gotStr)
+	if !strings.Contains(string(got), "func main()") {
+		t.Errorf("result lost code: %q", got)
 	}
 }
 

@@ -2,24 +2,56 @@ package utils
 
 import (
 	"os"
+	"path/filepath"
 	"testing"
 	"uncomment-cli/internal/fs"
 )
 
 func TestIsFile(t *testing.T) {
-	tempDirectory := "some_directory"
+	curr, err := os.Getwd()
+	if err != nil {
+		t.Fatalf("failed to get curr working dir: %v", err)
+	}
 
-	err := os.Mkdir(tempDirectory, 0700)
+	tempDirectory, err := os.MkdirTemp(curr, "temp_dir_pattern*")
 	if err != nil {
 		t.Fatalf("failed to create temp directory: %v", err)
 	}
-	defer os.Remove(tempDirectory)
 
-	f, err := os.Create("file.txt")
+	tempPath, err := filepath.Abs(tempDirectory)
+	if err != nil {
+		t.Fatalf("failed to get temp path: %v", err)
+	}
+
+	defer func(name string) {
+		err = os.RemoveAll(name)
+		if err != nil {
+			t.Fatalf("failed to remove temp dir: %v", err)
+		}
+	}(tempPath)
+
+	tempFile, err := os.CreateTemp(tempPath, "temp_file.txt")
 	if err != nil {
 		t.Fatalf("failed to create test file: %v", err)
 	}
-	defer os.Remove(f.Name())
+
+	tepmFilePath, err := filepath.Abs(tempFile.Name())
+	if err != nil {
+		t.Fatalf("failed to get temp file path: %v", err)
+	}
+
+	defer func(f *os.File) {
+		if err = f.Close(); err != nil {
+			t.Fatalf("failed to close test file: %v", err)
+		}
+	}(tempFile)
+
+	defer func(name string) {
+		err = os.RemoveAll(name)
+		if err != nil {
+			t.Fatalf("failed to remove temp file: %v", err)
+		}
+	}(tepmFilePath)
 
 	tests := []struct {
 		name    string
@@ -31,7 +63,7 @@ func TestIsFile(t *testing.T) {
 		{
 			name:    "regular file",
 			fs:      fs.OSFS{},
-			path:    "./file.txt",
+			path:    tepmFilePath,
 			wantRes: true,
 			wantErr: false,
 		},
