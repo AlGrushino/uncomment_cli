@@ -12,7 +12,7 @@ import (
 	"uncomment-cli/pkg/path"
 )
 
-func Uncomment(originalPath string) error {
+func Uncomment(originalPath string) (err error) {
 	fset := token.NewFileSet()
 
 	file, err := parser.ParseFile(fset, originalPath, nil, parser.ParseComments)
@@ -60,7 +60,11 @@ func Uncomment(originalPath string) error {
 	if err != nil {
 		return fmt.Errorf("failed to open original: %w", err)
 	}
-	defer dst.Close()
+	defer func(f *os.File) {
+		if closeErr := dst.Close(); closeErr != nil && err == nil {
+			err = fmt.Errorf("failed to close file: %v", closeErr)
+		}
+	}(dst)
 
 	_, err = io.Copy(dst, &buf)
 	if err != nil {
