@@ -47,3 +47,5 @@ func TestGreetCmd(t *testing.T) {
 		})
 	}
 }
+
+// comment for github actions
