@@ -7,17 +7,17 @@ import (
 )
 
 type Pair struct {
-	path string
-	err  error
+	Path string
+	Err  error
 }
 
 func worker(path string) Pair {
 	res := Pair{
-		path: path,
+		Path: path,
 	}
 
 	if err := Uncomment(path); err != nil {
-		res.err = err
+		res.Err = err
 	}
 
 	return res

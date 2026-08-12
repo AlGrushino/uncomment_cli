@@ -125,8 +125,8 @@ func TestUncommentMany(t *testing.T) {
 
 	errorsList := []error{}
 	for pair := range resCh {
-		if pair.err != nil {
-			errorsList = append(errorsList, fmt.Errorf("failed %s: %w", pair.path, pair.err))
+		if pair.Err != nil {
+			errorsList = append(errorsList, fmt.Errorf("failed %s: %w", pair.Path, pair.Err))
 		}
 	}
 
@@ -210,8 +210,8 @@ func TestUncommentManyMoreFilesThanCores(t *testing.T) {
 
 	errorsList := []error{}
 	for pair := range resCh {
-		if pair.err != nil {
-			errorsList = append(errorsList, fmt.Errorf("failed %s: %w", pair.path, pair.err))
+		if pair.Err != nil {
+			errorsList = append(errorsList, fmt.Errorf("failed %s: %w", pair.Path, pair.Err))
 		}
 	}
 
@@ -309,8 +309,8 @@ func TestUncommentManyFilesInMultipleDirsLessOrEqualCores(t *testing.T) {
 	resCh := UncommentMany(copiedPaths...)
 	var errorsList []error
 	for pair := range resCh {
-		if pair.err != nil {
-			errorsList = append(errorsList, fmt.Errorf("failed %s: %w", pair.path, pair.err))
+		if pair.Err != nil {
+			errorsList = append(errorsList, fmt.Errorf("failed %s: %w", pair.Path, pair.Err))
 		}
 	}
 	if len(errorsList) > 0 {
@@ -337,8 +337,8 @@ func TestUncommentManyFilesInMultipleDirsMoreThanCores(t *testing.T) {
 	resCh := UncommentMany(copiedPaths...)
 	var errorsList []error
 	for pair := range resCh {
-		if pair.err != nil {
-			errorsList = append(errorsList, fmt.Errorf("failed %s: %w", pair.path, pair.err))
+		if pair.Err != nil {
+			errorsList = append(errorsList, fmt.Errorf("failed %s: %w", pair.Path, pair.Err))
 		}
 	}
 	if len(errorsList) > 0 {
@@ -385,7 +385,7 @@ func TestUncommentMany_WorkerError(t *testing.T) {
 
 	results := make(map[string]error)
 	for pair := range resCh {
-		results[pair.path] = pair.err
+		results[pair.Path] = pair.Err
 	}
 
 	if err, ok := results[invalidFile]; !ok {
