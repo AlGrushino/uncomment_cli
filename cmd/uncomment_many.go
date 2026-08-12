@@ -9,7 +9,7 @@ import (
 var pathList []string
 
 var uncommentManyCmd = &cobra.Command{
-	Use:   "uncomment any number of *.go files",
+	Use:   "uncomment-many",
 	Short: "deletes all comments from any number of *.go files",
 	Long:  "This command deletes ALL comments from any number of *.go files",
 
@@ -18,10 +18,10 @@ var uncommentManyCmd = &cobra.Command{
 
 		for p := range errCh {
 			if p.Err != nil {
-				cmd.Printf("Failed to uncomment file: %s, error: %v", p.Path, p.Err)
+				cmd.PrintErrf("Failed to uncomment file: %s, error: %v\n", p.Path, p.Err)
 				continue
 			}
-			cmd.Printf("Succesfully uncommented file: %s", p.Path)
+			cmd.Printf("Succesfully uncommented file: %s\n", p.Path)
 		}
 	},
 }
@@ -34,6 +34,6 @@ func init() {
 		"pathes",
 		"p",
 		[]string{},
-		"Path to files",
+		"Pathes to files",
 	)
 }
