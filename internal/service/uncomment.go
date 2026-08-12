@@ -12,10 +12,18 @@ import (
 	"uncomment-cli/pkg/path"
 )
 
+var (
+	parseFileFunc   = parser.ParseFile
+	formatNodeFunc  = format.Node
+	allowedPathFunc = path.AllowedPath
+	openFileFunc    = os.OpenFile
+	copyFunc        = io.Copy
+)
+
 func Uncomment(originalPath string) (err error) {
 	fset := token.NewFileSet()
 
-	file, err := parser.ParseFile(fset, originalPath, nil, parser.ParseComments)
+	file, err := parseFileFunc(fset, originalPath, nil, parser.ParseComments)
 	if err != nil {
 		return fmt.Errorf("failed to parse file: %w", err)
 	}
@@ -46,17 +54,17 @@ func Uncomment(originalPath string) (err error) {
 
 	var buf bytes.Buffer
 
-	err = format.Node(&buf, fset, file)
+	err = formatNodeFunc(&buf, fset, file)
 	if err != nil {
 		return fmt.Errorf("failed to format and write code into temp file: %w", err)
 	}
 
-	safePath, err := path.AllowedPath(originalPath)
+	safePath, err := allowedPathFunc(originalPath)
 	if err != nil {
 		return err
 	}
 
-	dst, err := os.OpenFile(safePath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0o600) // #nosec G304
+	dst, err := openFileFunc(safePath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0o600)
 	if err != nil {
 		return fmt.Errorf("failed to open original: %w", err)
 	}
@@ -66,7 +74,7 @@ func Uncomment(originalPath string) (err error) {
 		}
 	}(dst)
 
-	_, err = io.Copy(dst, &buf)
+	_, err = copyFunc(dst, &buf)
 	if err != nil {
 		return fmt.Errorf("failed to copy src to dst: %w", err)
 	}

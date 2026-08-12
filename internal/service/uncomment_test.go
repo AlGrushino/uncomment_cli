@@ -1,6 +1,9 @@
 package service
 
 import (
+	"fmt"
+	"go/token"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -137,4 +140,102 @@ func TestUncomment_Errors(t *testing.T) {
 			}
 		})
 	}
+}
+func TestUncomment_FormatError(t *testing.T) {
+	old := formatNodeFunc
+	defer func() { formatNodeFunc = old }()
+
+	formatNodeFunc = func(w io.Writer, fset *token.FileSet, node any) error {
+		return fmt.Errorf("mock format error")
+	}
+
+	filePath := createTestFile(t)
+	err := Uncomment(filePath)
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+	if !contains(err.Error(), "failed to format") {
+		t.Errorf("unexpected error message: %v", err)
+	}
+}
+
+func TestUncomment_AllowedPathError(t *testing.T) {
+	old := allowedPathFunc
+	defer func() { allowedPathFunc = old }()
+
+	allowedPathFunc = func(path string) (string, error) {
+		return "", fmt.Errorf("mock allowed path error")
+	}
+
+	filePath := createTestFile(t)
+	err := Uncomment(filePath)
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+	if !contains(err.Error(), "mock allowed path error") {
+		t.Errorf("unexpected error message: %v", err)
+	}
+}
+
+func TestUncomment_OpenFileError(t *testing.T) {
+	old := openFileFunc
+	defer func() { openFileFunc = old }()
+
+	openFileFunc = func(name string, flag int, perm os.FileMode) (*os.File, error) {
+		return nil, fmt.Errorf("mock open file error")
+	}
+
+	filePath := createTestFile(t)
+	err := Uncomment(filePath)
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+	if !contains(err.Error(), "failed to open original") {
+		t.Errorf("unexpected error message: %v", err)
+	}
+}
+
+func TestUncomment_CopyError(t *testing.T) {
+	old := copyFunc
+	defer func() { copyFunc = old }()
+
+	copyFunc = func(dst io.Writer, src io.Reader) (int64, error) {
+		return 0, fmt.Errorf("mock copy error")
+	}
+
+	filePath := createTestFile(t)
+	err := Uncomment(filePath)
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+	if !contains(err.Error(), "failed to copy src to dst") {
+		t.Errorf("unexpected error message: %v", err)
+	}
+}
+
+func TestUncomment_CloseError(t *testing.T) {
+	t.Skip("skipping close error test: requires mocking *os.File.Close, which is complex")
+}
+
+func contains(s, substr string) bool {
+	return len(s) >= len(substr) &&
+		(s == substr || len(s) > len(substr) &&
+			(s[:len(substr)] == substr || s[len(s)-len(substr):] == substr || contains(s[1:], substr)))
+}
+
+func createTestFile(t *testing.T) string {
+	tempDir := t.TempDir()
+	tempFile := filepath.Join(tempDir, "test.go")
+	content := `package main
+
+import "fmt"
+
+func main() {
+    fmt.Println("Hello")
+}
+`
+	if err := os.WriteFile(tempFile, []byte(content), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	return tempFile
 }
