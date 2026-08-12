@@ -1,6 +1,7 @@
 package path
 
 import (
+	"errors"
 	"os"
 	"path/filepath"
 	"testing"
@@ -107,4 +108,112 @@ func mustAbs(p string) string {
 		panic(err)
 	}
 	return abs
+}
+
+func TestAllowedPath_AbsPathError(t *testing.T) {
+	oldAbs := absFunc
+	defer func() { absFunc = oldAbs }()
+
+	testPath := "some/path"
+	absFunc = func(p string) (string, error) {
+		if p == testPath {
+			return "", errors.New("mock abs error")
+		}
+		return filepath.Abs(p)
+	}
+
+	_, err := AllowedPath(testPath)
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+	if !contains(err.Error(), "failed to get absolute path") {
+		t.Errorf("unexpected error message: %v", err)
+	}
+}
+
+func TestAllowedPath_HomeDirError(t *testing.T) {
+	oldHome := homeDirFunc
+	defer func() { homeDirFunc = oldHome }()
+
+	homeDirFunc = func() (string, error) {
+		return "", errors.New("mock home dir error")
+	}
+
+	_, err := AllowedPath("/some/path")
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+	if !contains(err.Error(), "failed to get home dir") {
+		t.Errorf("unexpected error message: %v", err)
+	}
+}
+
+func TestAllowedPath_AbsHomeError(t *testing.T) {
+	oldAbs := absFunc
+	oldHome := homeDirFunc
+	defer func() {
+		absFunc = oldAbs
+		homeDirFunc = oldHome
+	}()
+
+	fakeHome := "/home/testuser"
+	homeDirFunc = func() (string, error) {
+		return fakeHome, nil
+	}
+
+	absFunc = func(p string) (string, error) {
+		if p == fakeHome {
+			return "", errors.New("mock abs home error")
+		}
+		return filepath.Abs(p)
+	}
+
+	_, err := AllowedPath("/some/path")
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+	if !contains(err.Error(), "failed to get absolute home dir") {
+		t.Errorf("unexpected error message: %v", err)
+	}
+}
+
+func TestAllowedPath_AbsTempError(t *testing.T) {
+	oldAbs := absFunc
+	oldHome := homeDirFunc
+	oldTemp := tempDirFunc
+	defer func() {
+		absFunc = oldAbs
+		homeDirFunc = oldHome
+		tempDirFunc = oldTemp
+	}()
+
+	fakeHome := "/home/testuser"
+	fakeTmp := "/tmp"
+	homeDirFunc = func() (string, error) {
+		return fakeHome, nil
+	}
+	tempDirFunc = func() string {
+		return fakeTmp
+	}
+
+	absFunc = func(p string) (string, error) {
+		if p == fakeTmp {
+			return "", errors.New("mock abs tmp error")
+		}
+		return filepath.Abs(p)
+	}
+
+	_, err := AllowedPath("/some/outside/path")
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+	if !contains(err.Error(), "failed to get absolute temp dir") {
+		t.Errorf("unexpected error message: %v", err)
+	}
+}
+
+func contains(s, substr string) bool {
+	return len(s) >= len(substr) &&
+		(s == substr || len(s) > len(substr) &&
+			(s[:len(substr)] == substr || s[len(s)-len(substr):] == substr || contains(s[1:], substr)))
 }
