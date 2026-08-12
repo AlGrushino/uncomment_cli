@@ -5,6 +5,9 @@ import (
 	"time"
 )
 
+var _ FS = OSFS{}
+var _ FS = MockFS{}
+
 type FS interface {
 	Stat(name string) (os.FileInfo, error)
 }
