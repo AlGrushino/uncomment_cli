@@ -42,7 +42,7 @@ deps: ## Tidy module dependencies
 
 clean: ## Remove build artifacts, coverage files and test cache
 	rm -rf $(BIN_DIR)
-	rm -f coverage.out coverage.html
+	rm -f coverage.out coverage.html *.prof
 	go clean -testcache
 
 help: ## Show available commands

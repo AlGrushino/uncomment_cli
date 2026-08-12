@@ -8,92 +8,65 @@ import (
 )
 
 func TestUncomment(t *testing.T) {
-	dir, err := os.Getwd()
-	if err != nil {
-		t.Fatalf("failed to get curr dir for tests: %v", err)
-	}
-
-	const tempDirPattern = "test_dir_*"
-	tempDir, err := os.MkdirTemp(dir, tempDirPattern)
-	if err != nil {
-		t.Fatalf("failed to create temp dir for tests: %v", err)
-	}
-
-	tempDirPath, err := filepath.Abs(tempDir)
-	if err != nil {
-		t.Fatalf("failed te get abs path of temp dir: %v", err)
-	}
-
-	defer func(path string) {
-		err = os.RemoveAll(path)
-		if err != nil {
-			t.Fatalf("failed to remove temp dir: %v", err)
-		}
-	}(tempDirPath)
-
-	const testFilePattern = "test_file_*.go"
-
-	file, err := os.CreateTemp(tempDirPath, testFilePattern)
-
-	tempFilePath, err := filepath.Abs(file.Name())
-	if err != nil {
-		t.Fatalf("failed to get temp file path: %v", err)
-	}
-
-	defer func(f *os.File) {
-		if err = file.Close(); err != nil {
-			t.Fatalf("failed to close temp file: %v", err)
-		}
-	}(file)
-
-	defer func(path string) {
-		err = os.RemoveAll(tempFilePath)
-		if err != nil {
-			t.Fatalf("failed to remove test file: %v", err)
-		}
-	}(tempDirPath)
+	tempDir := t.TempDir()
+	tempFile := filepath.Join(tempDir, "test.go")
 
 	srcContent := `package main
 
 import "fmt"
 
-// This is a comment
+// this is a type comment
+type MyType int
+
+// this is a struct comment
+type MyStruct struct {
+    // field comment
+    Field int
+}
+
+// this is a var comment
+var (
+    // var1 comment
+    Var1 int
+    // var2 comment
+    Var2 string
+)
+
+// this is a function comment
 func main() {
-    // Another comment
     fmt.Println("Hello")
 }
 `
-
-	srcPath, err := filepath.Abs(file.Name())
-	if err != nil {
-		t.Fatalf("failed to get abs path of test file: %v", err)
-	}
-
-	if err := os.WriteFile(srcPath, []byte(srcContent), 0o600); err != nil {
+	if err := os.WriteFile(tempFile, []byte(srcContent), 0o600); err != nil {
 		t.Fatalf("failed to write source file: %v", err)
 	}
 
-	if err := Uncomment(srcPath); err != nil {
+	if err := Uncomment(tempFile); err != nil {
 		t.Fatalf("Uncomment() error = %v", err)
 	}
 
-	got, err := os.ReadFile(srcPath)
+	got, err := os.ReadFile(tempFile)
 	if err != nil {
 		t.Fatalf("failed to read result file: %v", err)
 	}
+	gotStr := string(got)
 
-	if strings.Contains(string(got), "// This is a comment") {
-		t.Errorf("result still contains comment: %q", got)
-	}
-	if strings.Contains(string(got), "// Another comment") {
-		t.Errorf("result still contains comment: %q", got)
+	if strings.Contains(gotStr, "//") {
+		t.Errorf("result still contains comments: %q", gotStr)
 	}
 
-	if !strings.Contains(string(got), `fmt.Println("Hello")`) {
-		t.Errorf("result lost code: %q", got)
+	checks := []string{
+		"type MyType int",
+		"type MyStruct struct",
+		"Field int",
+		"Var1 int",
+		"Var2 string",
+		"fmt.Println",
 	}
-	if !strings.Contains(string(got), "func main()") {
-		t.Errorf("result lost code: %q", got)
+	for _, check := range checks {
+		if !strings.Contains(gotStr, check) {
+			t.Errorf("result lost code: %s", check)
+		}
 	}
 }
 
@@ -119,6 +92,34 @@ func TestUncomment_Errors(t *testing.T) {
 			path: filepath.Join(dir, "invalid.go"),
 			setup: func() error {
 				return os.WriteFile(filepath.Join(dir, "invalid.go"), []byte("not a go file"), 0o600)
+			},
+			wantErr: true,
+		},
+		{
+			name: "path outside allowed directory",
+			path: "/etc/passwd",
+			setup: func() error {
+				return nil
+			},
+			wantErr: true,
+		},
+		{
+			name: "read-only file",
+			path: filepath.Join(dir, "readonly.go"),
+			setup: func() error {
+				content := `package main\nfunc main() {}\n`
+				if err := os.WriteFile(filepath.Join(dir, "readonly.go"), []byte(content), 0444); err != nil {
+					return err
+				}
+				return nil
+			},
+			wantErr: true,
+		},
+		{
+			name: "path is a directory",
+			path: dir,
+			setup: func() error {
+				return nil
 			},
 			wantErr: true,
 		},
