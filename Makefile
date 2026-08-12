@@ -40,9 +40,10 @@ lint: ## Run all linters (go vet, golangci-lint, gosec)
 deps: ## Tidy module dependencies
 	go mod tidy
 
-clean: ## Remove build artifacts and coverage files
+clean: ## Remove build artifacts, coverage files and test cache
 	rm -rf $(BIN_DIR)
 	rm -f coverage.out coverage.html
+	go clean -testcache
 
 help: ## Show available commands
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) \

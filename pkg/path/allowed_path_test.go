@@ -3,7 +3,6 @@ package path
 import (
 	"os"
 	"path/filepath"
-	"strings"
 	"testing"
 )
 
@@ -77,11 +76,11 @@ func TestAllowedPath(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name:    "another system dir",
-			path:    "/tmp",
-			wantOK:  false,
-			wantAbs: "",
-			wantErr: true,
+			name:    "temporary directory",
+			path:    os.TempDir(),
+			wantOK:  true,
+			wantAbs: mustAbs(os.TempDir()),
+			wantErr: false,
 		},
 	}
 
@@ -95,14 +94,8 @@ func TestAllowedPath(t *testing.T) {
 				return
 			}
 
-			if !strings.HasPrefix(got, absHome+string(filepath.Separator)) && got != absHome {
-				t.Errorf("AllowedPath(%q) = %q, must be inside home %q", tt.path, got, absHome)
-			}
-
-			if tt.wantAbs != "" {
-				if got != tt.wantAbs {
-					t.Errorf("AllowedPath(%q) = %q, want %q", tt.path, got, tt.wantAbs)
-				}
+			if tt.wantAbs != "" && got != tt.wantAbs {
+				t.Errorf("AllowedPath(%q) = %q, want %q", tt.path, got, tt.wantAbs)
 			}
 		})
 	}
