@@ -354,3 +354,48 @@ func TestUncommentManyFilesInMultipleDirsMoreThanCores(t *testing.T) {
 		}
 	}
 }
+
+func TestUncommentMany_EmptyPaths(t *testing.T) {
+	resCh := UncommentMany()
+	count := 0
+	for range resCh {
+		count++
+	}
+	if count != 0 {
+		t.Errorf("expected 0 results, got %d", count)
+	}
+}
+
+func TestUncommentMany_WorkerError(t *testing.T) {
+	tempDir := t.TempDir()
+
+	invalidFile := filepath.Join(tempDir, "invalid.go")
+	if err := os.WriteFile(invalidFile, []byte("not a valid go file"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	validFile := filepath.Join(tempDir, "valid.go")
+	validContent := ` package main
+	func main() {}
+	`
+	if err := os.WriteFile(validFile, []byte(validContent), 0644); err != nil {
+		t.Fatal(err)
+	}
+	resCh := UncommentMany(invalidFile, validFile)
+
+	results := make(map[string]error)
+	for pair := range resCh {
+		results[pair.path] = pair.err
+	}
+
+	if err, ok := results[invalidFile]; !ok {
+		t.Errorf("invalid file not found in results")
+	} else if err == nil {
+		t.Errorf("invalid file expected error, got nil")
+	}
+	if err, ok := results[validFile]; !ok {
+		t.Errorf("valid file not found in results")
+	} else if err != nil {
+		t.Errorf("valid file expected no error, got %v", err)
+	}
+}
