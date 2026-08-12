@@ -228,3 +228,129 @@ func TestUncommentManyMoreFilesThanCores(t *testing.T) {
 		}
 	}
 }
+
+func copyFilesToDirs(t *testing.T, rootDir string, count int) []string {
+	_, filename, _, ok := runtime.Caller(0)
+	if !ok {
+		t.Fatal("failed to get path to current file")
+	}
+	testdataDir := filepath.Join(filepath.Dir(filename), "testdata")
+
+	entries, err := os.ReadDir(testdataDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var fileNames []string
+	for _, entry := range entries {
+		if !entry.IsDir() {
+			fileNames = append(fileNames, entry.Name())
+		}
+	}
+	if len(fileNames) == 0 {
+		t.Fatal("no files in testdata")
+	}
+
+	const numDirs = 3
+	dirs := make([]string, numDirs)
+	for i := range numDirs {
+		dir := filepath.Join(rootDir, fmt.Sprintf("dir%d", i+1))
+		if err := os.Mkdir(dir, 0755); err != nil {
+			t.Fatal(err)
+		}
+		dirs[i] = dir
+	}
+
+	rng := rand.New(rand.NewSource(time.Now().UnixNano()))
+	copiedPaths := make([]string, 0, count)
+
+	for range count {
+		idx := rng.Intn(len(fileNames))
+		srcName := fileNames[idx]
+		srcPath := filepath.Join(testdataDir, srcName)
+
+		content, err := os.ReadFile(srcPath)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		dirIdx := rng.Intn(len(dirs))
+		destDir := dirs[dirIdx]
+
+		base := filepath.Base(srcName)
+		ext := filepath.Ext(base)
+		nameWithoutExt := base[:len(base)-len(ext)]
+		tmpFile, err := os.CreateTemp(destDir, nameWithoutExt+"-*.go")
+		if err != nil {
+			t.Fatal(err)
+		}
+		dstPath := tmpFile.Name()
+		if err := tmpFile.Close(); err != nil {
+			t.Fatal(err)
+		}
+
+		if err := os.WriteFile(dstPath, content, 0644); err != nil {
+			t.Fatal(err)
+		}
+
+		copiedPaths = append(copiedPaths, dstPath)
+		t.Logf("copied %s -> %s", srcName, dstPath)
+	}
+
+	return copiedPaths
+}
+
+func TestUncommentManyFilesInMultipleDirsLessOrEqualCores(t *testing.T) {
+	cores := runtime.NumCPU()
+	filesCount := cores
+
+	rootDir := t.TempDir()
+	copiedPaths := copyFilesToDirs(t, rootDir, filesCount)
+
+	resCh := UncommentMany(copiedPaths...)
+	var errorsList []error
+	for pair := range resCh {
+		if pair.err != nil {
+			errorsList = append(errorsList, fmt.Errorf("failed %s: %w", pair.path, pair.err))
+		}
+	}
+	if len(errorsList) > 0 {
+		for _, e := range errorsList {
+			t.Error(e)
+		}
+		t.Fatalf("failed to process %d files", len(errorsList))
+	}
+
+	for _, path := range copiedPaths {
+		if err := checkNoComments(path); err != nil {
+			t.Errorf("comments found in %s: %v", path, err)
+		}
+	}
+}
+
+func TestUncommentManyFilesInMultipleDirsMoreThanCores(t *testing.T) {
+	cores := runtime.NumCPU()
+	filesCount := cores*3 + 1
+
+	rootDir := t.TempDir()
+	copiedPaths := copyFilesToDirs(t, rootDir, filesCount)
+
+	resCh := UncommentMany(copiedPaths...)
+	var errorsList []error
+	for pair := range resCh {
+		if pair.err != nil {
+			errorsList = append(errorsList, fmt.Errorf("failed %s: %w", pair.path, pair.err))
+		}
+	}
+	if len(errorsList) > 0 {
+		for _, e := range errorsList {
+			t.Error(e)
+		}
+		t.Fatalf("failed to process %d files", len(errorsList))
+	}
+
+	for _, path := range copiedPaths {
+		if err := checkNoComments(path); err != nil {
+			t.Errorf("comments found in %s: %v", path, err)
+		}
+	}
+}
