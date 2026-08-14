@@ -4,7 +4,8 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"uncomment-cli/internal/fs"
+
+	"github.com/AlGrushino/uncomment_cli/internal/fs"
 )
 
 // IsFile reports whether the given path refers to a regular file (not a

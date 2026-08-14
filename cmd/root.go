@@ -9,10 +9,15 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// version is the CLI version. It can be overridden at build time via
+// -ldflags "-X github.com/AlGrushino/uncomment_cli/cmd.version=<version>".
+var version = "0.1.0"
+
 var rootCmd = &cobra.Command{
-	Use:   "uncomment-cli",
-	Short: "is a powerful custom CLI tool",
-	Long:  "A fast and flexible CLI tool built with Go and Cobra",
+	Use:     "uncomment-cli",
+	Short:   "is a powerful custom CLI tool",
+	Long:    "A fast and flexible CLI tool built with Go and Cobra",
+	Version: version,
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println("Welcome to uncomment-cli! Use --help to see available options.")
 	},

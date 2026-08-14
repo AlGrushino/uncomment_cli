@@ -1,7 +1,7 @@
 package cmd
 
 import (
-	"uncomment-cli/internal/service"
+	"github.com/AlGrushino/uncomment_cli/internal/service"
 
 	"github.com/spf13/cobra"
 )

@@ -11,7 +11,8 @@ import (
 	"go/token"
 	"io"
 	"os"
-	"uncomment-cli/pkg/path"
+
+	"github.com/AlGrushino/uncomment_cli/pkg/path"
 )
 
 var (

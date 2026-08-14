@@ -4,10 +4,12 @@ BINARY_NAME := uncomment-cli
 MAIN_PATH   := .
 BIN_DIR     := bin
 BIN_PATH    := $(BIN_DIR)/$(BINARY_NAME)
+VERSION     ?= 0.1.0
+LDFLAGS     := -X github.com/AlGrushino/uncomment_cli/cmd.version=$(VERSION)
 
 build: ## Build the CLI binary
 	@mkdir -p $(BIN_DIR)
-	go build -o $(BIN_PATH) $(MAIN_PATH)
+	go build -ldflags "$(LDFLAGS)" -o $(BIN_PATH) $(MAIN_PATH)
 
 run: ## Run the CLI using go run
 	go run $(MAIN_PATH)

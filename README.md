@@ -2,6 +2,11 @@
 
 A fast and flexible CLI tool that removes **all** comments from Go source files — one file at a time or many files in parallel.
 
+[![Go version](https://img.shields.io/github/go-mod/go-version/AlGrushino/uncomment_cli)](https://go.dev/)
+[![CI Pipeline](https://github.com/AlGrushino/uncomment_cli/actions/workflows/pipeline.yaml/badge.svg)](https://github.com/AlGrushino/uncomment_cli/actions)
+[![Go Report Card](https://goreportcard.com/badge/github.com/AlGrushino/uncomment_cli)](https://goreportcard.com/report/github.com/AlGrushino/uncomment_cli)
+[![License](https://img.shields.io/github/license/AlGrushino/uncomment_cli)](LICENSE)
+
 ## Features
 
 - **Strips every kind of comment** — line (`//`), block (`/* */`) and doc comments — in a single AST pass.
@@ -24,6 +29,12 @@ Clone the repository and build the binary:
 git clone https://github.com/AlGrushino/uncomment_cli.git
 cd uncomment_cli
 make build
+```
+
+Or install it directly into your `$GOBIN`:
+
+```bash
+go install github.com/AlGrushino/uncomment_cli@latest
 ```
 
 The binary will be placed at `bin/uncomment-cli`.
