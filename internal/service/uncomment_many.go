@@ -6,23 +6,30 @@ import (
 	"time"
 )
 
+// Pair is the result of processing a single file: its path and, if the
+// operation failed, the error that occurred.
 type Pair struct {
-	path string
-	err  error
+	Path string
+	Err  error
 }
 
 func worker(path string) Pair {
 	res := Pair{
-		path: path,
+		Path: path,
 	}
 
 	if err := Uncomment(path); err != nil {
-		res.err = err
+		res.Err = err
 	}
 
 	return res
 }
 
+// UncommentMany strips comments from the given files concurrently.
+//
+// It runs a worker pool bounded by the number of CPU cores, calls Uncomment
+// on every path and streams the results through the returned channel as a
+// sequence of Pairs. The channel is closed once all files are processed.
 func UncommentMany(paths ...string) <-chan Pair {
 	cores := runtime.NumCPU()
 	sem := make(chan struct{}, cores)

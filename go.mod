@@ -1,4 +1,4 @@
-module uncomment-cli
+module github.com/AlGrushino/uncomment_cli
 
 go 1.25.2
 

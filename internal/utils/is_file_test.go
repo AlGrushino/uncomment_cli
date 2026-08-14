@@ -4,7 +4,8 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
-	"uncomment-cli/internal/fs"
+
+	"github.com/AlGrushino/uncomment_cli/internal/fs"
 )
 
 func TestIsFile(t *testing.T) {

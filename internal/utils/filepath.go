@@ -5,6 +5,10 @@ import (
 	"fmt"
 )
 
+// GetFilePath returns the directory part of the given absolute file path.
+//
+// The path must start with '/' and must not end with '/', otherwise an error
+// is returned.
 func GetFilePath(path string) (string, error) {
 	if len(path) == 0 {
 		return "", errors.New("failed to get path: length of path equals 0")

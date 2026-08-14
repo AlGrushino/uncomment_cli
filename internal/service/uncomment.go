@@ -1,3 +1,5 @@
+// Package service contains the core logic for stripping comments from Go
+// source files, either one file at a time or many files at once.
 package service
 
 import (
@@ -9,13 +11,28 @@ import (
 	"go/token"
 	"io"
 	"os"
-	"uncomment-cli/pkg/path"
+
+	"github.com/AlGrushino/uncomment_cli/pkg/path"
 )
 
+var (
+	parseFileFunc   = parser.ParseFile
+	formatNodeFunc  = format.Node
+	allowedPathFunc = path.AllowedPath
+	openFileFunc    = os.OpenFile
+	copyFunc        = io.Copy
+)
+
+// Uncomment removes all comments from the Go source file at originalPath
+// and writes the cleaned source back to the same file.
+//
+// The file is parsed into an AST, every comment node is dropped and the
+// resulting source is reformatted before the original file is overwritten.
+// The path must point inside the home or temp directory (see path.AllowedPath).
 func Uncomment(originalPath string) (err error) {
 	fset := token.NewFileSet()
 
-	file, err := parser.ParseFile(fset, originalPath, nil, parser.ParseComments)
+	file, err := parseFileFunc(fset, originalPath, nil, parser.ParseComments)
 	if err != nil {
 		return fmt.Errorf("failed to parse file: %w", err)
 	}
@@ -46,17 +63,17 @@ func Uncomment(originalPath string) (err error) {
 
 	var buf bytes.Buffer
 
-	err = format.Node(&buf, fset, file)
+	err = formatNodeFunc(&buf, fset, file)
 	if err != nil {
 		return fmt.Errorf("failed to format and write code into temp file: %w", err)
 	}
 
-	safePath, err := path.AllowedPath(originalPath)
+	safePath, err := allowedPathFunc(originalPath)
 	if err != nil {
 		return err
 	}
 
-	dst, err := os.OpenFile(safePath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0o600) // #nosec G304
+	dst, err := openFileFunc(safePath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0o600)
 	if err != nil {
 		return fmt.Errorf("failed to open original: %w", err)
 	}
@@ -66,7 +83,7 @@ func Uncomment(originalPath string) (err error) {
 		}
 	}(dst)
 
-	_, err = io.Copy(dst, &buf)
+	_, err = copyFunc(dst, &buf)
 	if err != nil {
 		return fmt.Errorf("failed to copy src to dst: %w", err)
 	}

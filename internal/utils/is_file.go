@@ -4,9 +4,12 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"uncomment-cli/internal/fs"
+
+	"github.com/AlGrushino/uncomment_cli/internal/fs"
 )
 
+// IsFile reports whether the given path refers to a regular file (not a
+// directory). It returns an error if the path does not exist.
 func IsFile(fs fs.FS, path string) (bool, error) {
 	info, err := fs.Stat(path)
 	if err != nil {
