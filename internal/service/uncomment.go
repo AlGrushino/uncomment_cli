@@ -1,3 +1,5 @@
+// Package service contains the core logic for stripping comments from Go
+// source files, either one file at a time or many files at once.
 package service
 
 import (
@@ -20,6 +22,12 @@ var (
 	copyFunc        = io.Copy
 )
 
+// Uncomment removes all comments from the Go source file at originalPath
+// and writes the cleaned source back to the same file.
+//
+// The file is parsed into an AST, every comment node is dropped and the
+// resulting source is reformatted before the original file is overwritten.
+// The path must point inside the home or temp directory (see path.AllowedPath).
 func Uncomment(originalPath string) (err error) {
 	fset := token.NewFileSet()
 

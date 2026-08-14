@@ -1,3 +1,5 @@
+// Package path validates that a given filesystem path is located inside one
+// of the allowed directories: the user's home or the system temp directory.
 package path
 
 import (
@@ -13,6 +15,8 @@ var (
 	tempDirFunc = os.TempDir
 )
 
+// AllowedPath resolves path to an absolute location and returns it only if
+// it points inside the home or temp directory. Otherwise it returns an error.
 func AllowedPath(path string) (string, error) {
 	abs, err := absFunc(path)
 	if err != nil {

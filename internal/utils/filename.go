@@ -1,9 +1,13 @@
+// Package utils provides small helper functions for working with file paths
+// and file names.
 package utils
 
 import (
 	"errors"
 )
 
+// GetFileName extracts the file name from path, i.e. everything after the
+// last '/'. It returns an error if the path is empty.
 func GetFileName(path string) (string, error) {
 	if len(path) == 0 {
 		return "", errors.New("len of path equals 0")

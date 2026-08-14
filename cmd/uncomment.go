@@ -8,6 +8,7 @@ import (
 
 var filePath string
 
+// uncommentCmd deletes all comments from a single Go source file.
 var uncommentCmd = &cobra.Command{
 	Use:   "uncomment",
 	Short: "deletes all comments from *.go file",
